@@ -1,5 +1,4 @@
 import { program } from "commander";
-import { nanoid } from "nanoid";
 import {
   listContacts,
   getContactById,
@@ -18,7 +17,7 @@ program.parse();
 const options = program.opts();
 
 // TODO: рефакторити
-async function invokeAction({ action, id, name, email, phone }) {
+async function invokeAction({ action, id, ...data }) {
   switch (action) {
     case "list":
       // ...
@@ -32,7 +31,7 @@ async function invokeAction({ action, id, name, email, phone }) {
 
     case "add":
       // ... name email phone
-      console.log(await addContact(name, email, phone));
+      console.log(await addContact(data));
       break;
 
     case "remove":

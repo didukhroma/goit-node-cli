@@ -1,16 +1,17 @@
-import { nanoid } from "nanoid";
 import { readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { resolve } from "node:path";
 
-import { fileURLToPath } from "node:url";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { nanoid } from "nanoid";
 
-const contactsPath = join(__dirname, "./db/contacts.json");
+const contactsPath = resolve("db", "contacts.json");
+
+const updateFile = async (data) => {
+  await writeFile(contactsPath, JSON.stringify(data, null, 2));
+};
 
 export const listContacts = async () => {
   try {
-    return JSON.parse(await readFile(contactsPath));
+    return JSON.parse(await readFile(contactsPath, "utf-8"));
   } catch (error) {
     console.log(error.message);
   }
@@ -24,16 +25,15 @@ export const getContactById = async (contactId) => {
   }
 };
 
-export const addContact = async (name, email, phone) => {
+export const addContact = async (data) => {
   const contactId = nanoid();
-  const newContact = { id: contactId, name, email, phone };
+  const newContact = { id: contactId, ...data };
   try {
     const contactsList = await listContacts();
-    await writeFile(
-      contactsPath,
-      JSON.stringify([...contactsList, newContact])
-    );
-    return await getContactById(contactId);
+
+    await updateFile([...contactsList, newContact]);
+
+    return newContact;
   } catch (error) {
     console.log(error.message);
   }
@@ -41,13 +41,16 @@ export const addContact = async (name, email, phone) => {
 
 export const removeContact = async (contactId) => {
   try {
-    const contact = await getContactById(contactId);
-    if (!contact) return contact;
+    const contactsList = await listContacts();
 
-    const newContactsList = (await listContacts()).filter(
-      ({ id }) => id !== contactId
-    );
-    await writeFile(contactsPath, JSON.stringify(newContactsList));
+    const contactIdx = contactsList.findIndex(({ id }) => id === contactId);
+    if (!~contactIdx) return null;
+
+    const [contact] = contactsList.splice(contactIdx, 1);
+
+    await updateFile(contactsList);
+
+    return contact;
   } catch (error) {
     console.log(error.message);
   }
